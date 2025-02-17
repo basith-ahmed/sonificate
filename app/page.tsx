@@ -18,6 +18,12 @@ import { GridPattern } from "@/components/magicui/grid";
 import ShinyText from "@/components/magicui/shiny-text";
 import FadeContent from "@/components/magicui/fade-content";
 
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
+
 const SCALES = {
   major: [0, 2, 4, 5, 7, 9, 11],
   minor: [0, 2, 3, 5, 7, 8, 10],
@@ -27,10 +33,28 @@ const SCALES = {
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+// Add interfaces for state and data structures
+interface ColumnData {
+  hue: number;
+  brightness: number;
+}
+
+interface AudioParams {
+  scale: string;
+  key: string;
+  octave: number;
+  waveform: OscillatorType;
+  attack: number;
+  decay: number;
+  brightness: number;
+  sparkle: number;
+  columnDuration?: number;
+}
+
 export default function ImageSonification() {
-  const [imageUrl, setImageUrl] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [audioParams, setAudioParams] = useState({
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<boolean>(false);
+  const [audioParams, setAudioParams] = useState<AudioParams>({
     scale: "major",
     key: "C",
     octave: 4,
@@ -39,25 +63,26 @@ export default function ImageSonification() {
     decay: 0.3,
     brightness: 0.5,
     sparkle: 0.2,
+    columnDuration: 100, // Add this missing property
   });
-  const [columnData, setColumnData] = useState([]);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [audioBuffer, setAudioBuffer] = useState(null);
-  const [lineProgress, setLineProgress] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [waveformData, setWaveformData] = useState([]);
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [analyzerNode, setAnalyzerNode] = useState(null);
+  const [columnData, setColumnData] = useState<ColumnData[]>([]);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+  const [lineProgress, setLineProgress] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState<boolean>(false);
+  const [analyzerNode, setAnalyzerNode] = useState<AnalyserNode | null>(null);
 
-  const canvasRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const previewRef = useRef(null);
-  const sourceRef = useRef(null);
-  const waveformCanvasRef = useRef(null);
-  const animationFrameRef = useRef(null);
-  const startTimeRef = useRef(0);
-  const progressRef = useRef(0);
-  const animationRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const previewRef = useRef<HTMLImageElement>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const progressRef = useRef<number>(0);
+  const animationRef = useRef<number | null>(null);
 
   const TARGET_DURATION = 30;
 
@@ -77,30 +102,37 @@ export default function ImageSonification() {
     };
   }, []);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setImageUrl(e.target.result);
-      processImage(e.target.result);
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setImageUrl(result);
+        processImage(result);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const processImage = (url) => {
+  const processImage = (url: string) => {
     setProcessing(true);
     const img = new Image();
     img.onload = () => {
       const canvas = canvasRef.current;
+      if (!canvas) return;
+      
       const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const columns = [];
+      const columns: ColumnData[] = [];
 
       for (let x = 0; x < canvas.width; x++) {
         let totalHue = 0;
@@ -146,9 +178,9 @@ export default function ImageSonification() {
     img.src = url;
   };
 
-  const midiToFreq = (note) => 440 * Math.pow(2, (note - 69) / 12);
-  const quantizeToScale = (value, scale) => {
-    const notes = SCALES[scale];
+  const midiToFreq = (note: number): number => 440 * Math.pow(2, (note - 69) / 12);
+  const quantizeToScale = (value: number, scale: string): number => {
+    const notes = SCALES[scale as keyof typeof SCALES];
     const maxNote = notes.length - 1;
     const index = Math.round(value * maxNote);
     return notes[Math.min(Math.max(index, 0), maxNote)];
@@ -219,9 +251,13 @@ export default function ImageSonification() {
     setIsGeneratingAudio(false);
   };
 
-  const visualize = (analyzer) => {
+  const visualize = (analyzer: AnalyserNode) => {
     const canvas = waveformCanvasRef.current;
+    if (!canvas) return;
+    
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
     const bufferLength = analyzer.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
@@ -260,7 +296,7 @@ export default function ImageSonification() {
     draw();
   };
 
-  const audioBufferToWav = (buffer) => {
+  const audioBufferToWav = (buffer: AudioBuffer): Blob => {
     const numChannels = buffer.numberOfChannels;
     const length = buffer.length;
     const sampleRate = buffer.sampleRate;
@@ -270,7 +306,7 @@ export default function ImageSonification() {
     const header = new ArrayBuffer(44);
     const view = new DataView(header);
 
-    const writeString = (str, offset) => {
+    const writeString = (str: string, offset: number): void => {
       for (let i = 0; i < str.length; i++) {
         view.setUint8(offset + i, str.charCodeAt(i));
       }
@@ -306,14 +342,16 @@ export default function ImageSonification() {
 
     return new Blob([header, data], { type: "audio/wav" });
   };
-  const handleParamChange = (e) => {
-    setAudioParams({
-      ...audioParams,
-      [e.target.name]:
-        e.target.type === "number"
-          ? parseFloat(e.target.value)
-          : e.target.value,
-    });
+
+  const handleParamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.type === "number" 
+      ? parseFloat(e.target.value) 
+      : e.target.value;
+      
+    setAudioParams(prev => ({
+      ...prev,
+      [e.target.name]: value
+    }));
   };
 
   const handlePlayPause = () => {
@@ -321,13 +359,17 @@ export default function ImageSonification() {
 
     if (isPlaying) {
       sourceRef.current?.stop();
-      cancelAnimationFrame(animationFrameRef.current);
-
-      cancelAnimationFrame(animationRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
       setIsPlaying(false);
     } else {
-
       const audioContext = audioContextRef.current;
+      if (!audioContext) return;
+
       const source = audioContext.createBufferSource();
       const analyzer = audioContext.createAnalyser();
 
@@ -338,28 +380,18 @@ export default function ImageSonification() {
       analyzer.connect(audioContext.destination);
 
       setAnalyzerNode(analyzer);
+      source.connect(audioContext.destination);
 
-      source.connect(audioContextRef.current.destination);
-
-      startTimeRef.current =
-        audioContextRef.current.currentTime -
-        progressRef.current * TARGET_DURATION;
-
-      startTimeRef.current =
-        audioContextRef.current.currentTime -
-        progressRef.current * TARGET_DURATION;
-
-      startTimeRef.current =
-        audioContext.currentTime - progressRef.current * TARGET_DURATION;
+      startTimeRef.current = audioContext.currentTime - progressRef.current * TARGET_DURATION;
       source.start(0, progressRef.current * TARGET_DURATION);
 
       sourceRef.current = source;
       setIsPlaying(true);
 
       const drawProgress = () => {
-        const progress =
-          (audioContextRef.current.currentTime - startTimeRef.current) /
-          TARGET_DURATION;
+        if (!audioContextRef.current) return;
+        
+        const progress = (audioContextRef.current.currentTime - startTimeRef.current) / TARGET_DURATION;
         progressRef.current = progress;
         setLineProgress(progress * 100);
 
@@ -373,7 +405,6 @@ export default function ImageSonification() {
       };
 
       drawProgress();
-
       visualize(analyzer);
     }
   };
@@ -432,7 +463,8 @@ export default function ImageSonification() {
               height={30}
               x={-1}
               y={-1}
-              strokeDasharray={"4 2"}
+              squares={[[0, 0]]}
+              strokeDasharray="4 2"
               className={cn(
                 "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]"
               )}
@@ -520,7 +552,7 @@ export default function ImageSonification() {
                       </SelectContent>
                     </Select>
                     <Select
-                      value={audioParams.octave}
+                      value={audioParams.octave.toString()}
                       onValueChange={(v) =>
                         setAudioParams((p) => ({ ...p, octave: parseInt(v) }))
                       }
@@ -532,7 +564,7 @@ export default function ImageSonification() {
                         {[3, 4, 5, 6].map((oct) => (
                           <SelectItem
                             key={oct}
-                            value={oct}
+                            value={oct.toString()}
                             className="hover:bg-white/10"
                           >
                             {oct}
@@ -575,11 +607,11 @@ export default function ImageSonification() {
                     min="0"
                     max="1"
                     step="0.1"
-                    value={audioParams.brightness}
+                    value={audioParams.brightness.toString()}
                     onChange={(e) =>
                       setAudioParams((p) => ({
                         ...p,
-                        brightness: e.target.value,
+                        brightness: parseFloat(e.target.value)
                       }))
                     }
                     className="bg-white/5 border-white/10"
@@ -593,9 +625,12 @@ export default function ImageSonification() {
                     min="0"
                     max="0.5"
                     step="0.05"
-                    value={audioParams.sparkle}
+                    value={audioParams.sparkle.toString()}
                     onChange={(e) =>
-                      setAudioParams((p) => ({ ...p, sparkle: e.target.value }))
+                      setAudioParams((p) => ({
+                        ...p,
+                        sparkle: parseFloat(e.target.value)
+                      }))
                     }
                     className="bg-white/5 border-white/10"
                   />
@@ -605,7 +640,7 @@ export default function ImageSonification() {
                   <Label className="text-white text-sm">Waveform</Label>
                   <Select
                     value={audioParams.waveform}
-                    onValueChange={(v) =>
+                    onValueChange={(v: OscillatorType) =>
                       setAudioParams((p) => ({ ...p, waveform: v }))
                     }
                   >
