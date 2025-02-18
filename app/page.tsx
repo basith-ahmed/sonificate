@@ -521,7 +521,7 @@ export default function ImageSonification() {
           </div>
 
           <div className="flex flex-col items-center justify-center h-full w-1/4">
-            <div className="w-full h-full border-l border-white/10 bg-black p-8 pt-24 space-y-3">
+            <div className="w-full h-full border-l border-white/10 bg-black p-8 space-y-3">
               <h2 className="text-2xl font-bold text-white tracking-tight mb-8">
                 Sonification Configurations
               </h2>
@@ -529,7 +529,7 @@ export default function ImageSonification() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-white text-sm">Musical Key</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 text-white">
                     <Select
                       value={audioParams.key}
                       onValueChange={(v) =>
@@ -544,7 +544,7 @@ export default function ImageSonification() {
                           <SelectItem
                             key={note}
                             value={note}
-                            className="hover:bg-white/10"
+                            className="hover:bg-white/10 text-white"
                           >
                             {note}
                           </SelectItem>
@@ -565,7 +565,8 @@ export default function ImageSonification() {
                           <SelectItem
                             key={oct}
                             value={oct.toString()}
-                            className="hover:bg-white/10"
+                            className="hover:bg-white/10
+                            text-white"
                           >
                             {oct}
                           </SelectItem>
@@ -591,7 +592,7 @@ export default function ImageSonification() {
                         <SelectItem
                           key={scale}
                           value={scale}
-                          className="hover:bg-white/10"
+                          className="hover:bg-white/10 text-white"
                         >
                           {scale.charAt(0).toUpperCase() + scale.slice(1)}
                         </SelectItem>
@@ -653,7 +654,7 @@ export default function ImageSonification() {
                           <SelectItem
                             key={wave}
                             value={wave}
-                            className="hover:bg-white/10"
+                            className="hover:bg-white/10 text-white"
                           >
                             {wave.charAt(0).toUpperCase() + wave.slice(1)}
                           </SelectItem>
