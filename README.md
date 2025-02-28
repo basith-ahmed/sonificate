@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## What is this?
 
-## Getting Started
+This is a web app which converts images into sound, providing an innovative way to experience visual data through audio. It maps image features like brightness and color to sound properties such as pitch and volume, creating a unique auditory representation of the visual input.
 
-First, run the development server:
+(Just a small part of a large project [we](#contributors) made, just sharing the core feature for everyone to play around with)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Inspiration
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This project draws inspiration from NASA's sonification efforts, such as their work on the "Pillars of Creation," where brightness and vertical position are mapped to pitch and volume. For more information on NASA's sonifications, visit their [Sonifications page](https://science.nasa.gov/mission/hubble/multimedia/sonifications/).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Features and Working
 
-## Learn More
+The image processing pipeline extracts color and brightness information to generate sound. The steps include:
 
-To learn more about Next.js, take a look at the following resources:
+1. **Loading the Image**: The selected image is loaded onto an HTML canvas.
+2. **Extracting Pixel Data**: The application scans the image column by column.
+3. **Calculating Features**:
+   - **Brightness** is calculated as the average of RGB values normalized to a 0-1 range.
+   - **Hue** is determined based on the dominant color channel.
+4. **Generating Audio Mapping**:
+   - Brightness values control loudness.
+   - Hue values are mapped to pitch or timbre.
+   - Vertical position influences frequency.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Limitations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+While this app provides a compelling sonification experience, it is not perfect. It may not capture all visual complexities and requires some interpretation to fully appreciate the sounds generated.
 
-## Deploy on Vercel
+## Comparison with Other Tools
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Compared to other online sonification tools, this app offers a more user-friendly interface and creative mapping options. However, professional tools like NASA's sonifications may offer more refined outputs due to advanced processing.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Usage
+
+1. **Upload an Image**: Select an image file to sonify (preferably an image of a star cluster or galaxy, or you can have your fun with whichever photos you like).
+2. **Adjust Settings**: Optionally, adjust mapping settings for brightness, color, and frequency.
+3. **Play Sonification**: Click to hear the sonified version of your image.
+
+## Contributors
+- **Om Patil** - [GitHub](https://github.com/omleo789)
+- **Lakshmi Sanjeev** - [GitHub](https://github.com/lassense)
+- **Catherine George** - [GitHub](https://github.com/notkath)
+- **Me :)**
